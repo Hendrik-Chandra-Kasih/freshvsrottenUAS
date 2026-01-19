@@ -46,7 +46,7 @@ def predict(img: Image.Image):
     return CLASS_NAMES[idx], confidence
 
 # Streamlit UI
-st.title("📸 Fresh & Rotten Detection")
+st.title(" Fresh & Rotten Detection")
 
 st.write("Upload gambar buah untuk mengetahui apakah buah tersebut segar atau busuk.")
 
