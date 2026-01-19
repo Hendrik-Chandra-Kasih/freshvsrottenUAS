@@ -3,23 +3,21 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 from PIL import Image
-import io
 
-# Constants
+# ================= CONFIG =================
 CLASS_NAMES = ['Fresh', 'Rotten']
 TARGET_SIZE = (150, 150)
 CONF_THRESHOLD = 0.85
 MARGIN_THRESHOLD = 0.40
 
-# Load model sekali saat aplikasi dijalankan
+# ================= LOAD MODEL =================
 @st.cache_resource(show_spinner=True)
 def load_model_once():
-    model = load_model('model_uas2.h5')
-    return model
+    return load_model('model_uas1.h5')
 
 model = load_model_once()
 
-# Fungsi preprocessing gambar
+# ================= PREPROCESS =================
 def preprocess_image(img: Image.Image):
     if img.mode != 'RGB':
         img = img.convert('RGB')
@@ -29,7 +27,7 @@ def preprocess_image(img: Image.Image):
     img_array /= 255.0
     return img_array
 
-# Fungsi prediksi
+# ================= PREDICT =================
 def predict(img: Image.Image):
     processed = preprocess_image(img)
     pred = model.predict(processed)[0]
@@ -42,30 +40,50 @@ def predict(img: Image.Image):
         return 'Not Recognized', None
 
     idx = int(np.argmax(pred))
-    confidence = round(top1 * 100, 2)
-    return CLASS_NAMES[idx], confidence
+    return CLASS_NAMES[idx], round(top1 * 100, 2)
 
-# Streamlit UI
-st.title(" Fresh & Rotten Detection")
+# ================= UI =================
+st.set_page_config(page_title="Fresh vs Rotten Detection", layout="centered")
+st.title("🍎 Fresh vs Rotten Detection")
 
-st.write("Upload gambar buah untuk mengetahui apakah buah tersebut segar atau busuk.")
+st.write("Pilih metode input gambar:")
 
-uploaded_file = st.file_uploader("Pilih gambar...", type=['jpg', 'jpeg', 'png'])
+input_mode = st.radio(
+    "Metode Input",
+    ("📂 Upload Gambar", "📸 Ambil dari Kamera"),
+    horizontal=True
+)
 
-if uploaded_file is not None:
-    try:
+img = None
+
+# ===== UPLOAD MODE =====
+if input_mode == "📂 Upload Gambar":
+    uploaded_file = st.file_uploader(
+        "Upload gambar buah",
+        type=["jpg", "jpeg", "png"]
+    )
+
+    if uploaded_file is not None:
         img = Image.open(uploaded_file)
-        st.image(img, caption='Gambar yang diupload', use_column_width=True)
-        
-        if st.button("Prediksi"):
-            label, conf = predict(img)
-            if label == 'Not Recognized':
-                st.error("❌ Gambar tidak dikenali sebagai buah segar atau busuk.")
-            else:
-                st.success(f"🎯 Prediksi: **{label}**")
-                st.info(f"🔍 Confidence: **{conf}%**")
-    except Exception as e:
-        st.error(f"Terjadi kesalahan: {e}")
+        st.image(img, caption="Gambar diupload", use_column_width=True)
 
-st.write("---")
-st.write("Aplikasi dibuat menggunakan Streamlit dan model Keras yang telah dilatih.")
+# ===== CAMERA MODE =====
+elif input_mode == "📸 Ambil dari Kamera":
+    camera_file = st.camera_input("Ambil gambar buah")
+
+    if camera_file is not None:
+        img = Image.open(camera_file)
+        st.image(img, caption="Gambar dari kamera", use_column_width=True)
+
+# ================= ACTION =================
+if img is not None:
+    if st.button("🔍 Prediksi"):
+        label, conf = predict(img)
+
+        if label == "Not Recognized":
+            st.error("❌ Objek tidak dikenali sebagai buah.")
+        else:
+            st.success(f"✅ Prediksi: **{label}**")
+            st.info(f"Confidence: **{conf}%**")
+
+st.caption("CNN Image Classification • Streamlit • UAS")
