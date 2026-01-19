@@ -14,7 +14,7 @@ MARGIN_THRESHOLD = 0.40
 # Load model sekali saat aplikasi dijalankan
 @st.cache_resource(show_spinner=True)
 def load_model_once():
-    model = load_model('model_uas1.h5')
+    model = load_model('model_uas2.h5')
     return model
 
 model = load_model_once()
